@@ -1,0 +1,20 @@
+services:
+  app:
+    build: ./app
+    image: ${APP_IMAGE:-quem-faz:local}
+    container_name: quem-faz
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    volumes:
+      - dados:/app/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  dados:

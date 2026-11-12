@@ -1,0 +1,39 @@
+
+# Ambiente e arquivos locais
+.venv/
+.env
+.env.*
+!.env.example
+!.env.*.example
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Bancos locais
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+
+# Terraform: arquivos locais ou potencialmente sensíveis
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+*.tfvars.json
+crash.log
+crash.*.log
+.terraformrc
+terraform.rc
+
+# Chaves privadas e arquivos de credenciais
+*.pem
+*.key
