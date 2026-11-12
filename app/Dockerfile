@@ -9,6 +9,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Estágio 2: imagem final, só com o runtime e o código
 FROM python:3.12-slim
+
+# Aplica as atualizações disponíveis dos pacotes do sistema
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH" \
