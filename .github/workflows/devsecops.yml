@@ -72,7 +72,10 @@ jobs:
             --tag "$IMAGE_TAG" \
             ./app
 
-      - name: Trivy - vulnerabilidades da imagem
+      # Evidência: mantém todos os achados HIGH e CRITICAL,
+      # incluindo aqueles sem correção informada.
+      - name: Trivy - relatório completo HIGH e CRITICAL
+        id: trivy_report
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: image
@@ -82,14 +85,49 @@ jobs:
           output: reports/trivy.txt
           severity: HIGH,CRITICAL
           ignore-unfixed: false
-          exit-code: "1"
+          exit-code: "0"
 
-      - name: Exibir relatório do Trivy
+      # Controle obrigatório: bloqueia qualquer CRITICAL,
+      # mesmo quando não há correção informada.
+      - name: Trivy - bloquear qualquer CRITICAL
+        if: ${{ !cancelled() && steps.trivy_report.outcome == 'success' }}
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: quem-faz:${{ github.sha }}
+          scanners: vuln
+          format: table
+          output: reports/trivy-critical.txt
+          severity: CRITICAL
+          ignore-unfixed: false
+          exit-code: "1"
+          skip-setup-trivy: true
+
+      # Controle obrigatório: bloqueia HIGH quando o Trivy
+      # informa que existe uma versão corrigida.
+      - name: Trivy - bloquear HIGH com correção disponível
+        if: ${{ !cancelled() && steps.trivy_report.outcome == 'success' }}
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: quem-faz:${{ github.sha }}
+          scanners: vuln
+          format: table
+          output: reports/trivy-high-fixed.txt
+          severity: HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+          skip-setup-trivy: true
+
+      - name: Exibir relatórios do Trivy
         if: always()
         run: |
-          if [ -f reports/trivy.txt ]; then
-            cat reports/trivy.txt
-          fi
+          for report in reports/trivy*.txt; do
+            if [ -f "$report" ]; then
+              echo "===== $report ====="
+              cat "$report"
+            fi
+          done
 
       - name: Salvar relatórios disponíveis
         if: always()
