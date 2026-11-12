@@ -1,0 +1,101 @@
+name: Quem Faz - DevSecOps
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: devsecops-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validacao:
+    name: Testes, segurança e build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    steps:
+      - name: Obter código e histórico
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Gitleaks - procurar segredos no Git
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+
+      - name: Configurar Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Preparar pasta de relatórios
+        run: mkdir -p reports
+
+      - name: Instalar dependências dos testes
+        run: python -m pip install -r app/requirements-dev.txt
+
+      - name: Executar testes
+        working-directory: app
+        run: python -m pytest -v --junitxml=../reports/pytest.xml
+
+      - name: Instalar Semgrep em ambiente isolado
+        run: |
+          python -m venv "$RUNNER_TEMP/semgrep"
+          "$RUNNER_TEMP/semgrep/bin/python" -m pip install semgrep
+
+      - name: Semgrep - análise estática de segurança
+        run: |
+          "$RUNNER_TEMP/semgrep/bin/semgrep" scan \
+            --config p/default \
+            --error \
+            --strict \
+            --metrics=off \
+            --json-output=reports/semgrep.json \
+            app/
+
+      - name: Construir imagem para Linux AMD64
+        env:
+          IMAGE_TAG: quem-faz:${{ github.sha }}
+        run: |
+          docker build \
+            --pull \
+            --platform linux/amd64 \
+            --tag "$IMAGE_TAG" \
+            ./app
+
+      - name: Trivy - vulnerabilidades da imagem
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: quem-faz:${{ github.sha }}
+          scanners: vuln
+          format: table
+          output: reports/trivy.txt
+          severity: HIGH,CRITICAL
+          ignore-unfixed: false
+          exit-code: "1"
+
+      - name: Exibir relatório do Trivy
+        if: always()
+        run: |
+          if [ -f reports/trivy.txt ]; then
+            cat reports/trivy.txt
+          fi
+
+      - name: Salvar relatórios disponíveis
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: relatorios-devsecops
+          path: reports/
+          if-no-files-found: ignore
+          retention-days: 14
