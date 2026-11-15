@@ -119,6 +119,24 @@ jobs:
           exit-code: "1"
           skip-setup-trivy: true
 
+      - name: Publicar imagem aprovada no Docker Hub
+        if: ${{ success() && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          trap 'docker logout >/dev/null 2>&1 || true' EXIT
+
+          printf '%s' "$DOCKERHUB_TOKEN" | docker login \
+            --username "$DOCKERHUB_USERNAME" \
+            --password-stdin
+
+          IMAGE="docker.io/$DOCKERHUB_USERNAME/quem-faz:$COMMIT_SHA"
+          docker tag "quem-faz:$COMMIT_SHA" "$IMAGE"
+          docker push "$IMAGE"
+
       - name: Exibir relatórios do Trivy
         if: always()
         run: |
@@ -137,12 +155,13 @@ jobs:
           path: reports/
           if-no-files-found: ignore
           retention-days: 14
+
   conexao_azure:
-    name: Validar conexão com Azure
+    name: Deploy na Azure
     needs: validacao
     if: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     permissions:
       contents: read
@@ -156,10 +175,37 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Validar acesso ao Container App
+      - name: Atualizar imagem do Container App
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          COMMIT_SHA: ${{ github.sha }}
         run: |
-          az containerapp show \
+          set -euo pipefail
+
+          az containerapp update \
             --name quem-faz \
             --resource-group rg-quem-faz \
-            --query name \
-            --output tsv
+            --container-name quem-faz \
+            --image "docker.io/$DOCKERHUB_USERNAME/quem-faz:$COMMIT_SHA" \
+            --output none
+
+      - name: Direcionar tráfego para a revisão mais recente
+        run: |
+          az containerapp ingress traffic set \
+            --name quem-faz \
+            --resource-group rg-quem-faz \
+            --revision-weight latest=100 \
+            --output none
+
+      - name: Exibir endereço público para validação
+        run: |
+          set -euo pipefail
+
+          FQDN=$(az containerapp show \
+            --name quem-faz \
+            --resource-group rg-quem-faz \
+            --query properties.configuration.ingress.fqdn \
+            --output tsv)
+
+          test -n "$FQDN"
+          echo "Endereço para validar no navegador: https://$FQDN"
