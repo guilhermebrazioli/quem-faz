@@ -35,7 +35,7 @@ Desenvolvido no contexto das disciplinas CitizenTech e Secure DevOps da FIAP.
 | Infraestrutura como código | Terraform; recursos existentes incorporados por importação |
 | Observabilidade | Prometheus e Grafana locais coletando o MVP público via HTTPS |
 | Dados | Exclusivamente fictícios para demonstração |
-| Limitação | Ambiente acadêmico, não preparado para operação em produção |
+| Ambiente de uso | Demonstração acadêmica com dados fictícios |
 
 ## Escopo e dados de demonstração
 
@@ -51,9 +51,9 @@ Funcionalidades implementadas:
 - Documentação interativa da API.
 - Verificação de saúde e exposição de métricas.
 
-Este projeto é um ambiente acadêmico de demonstração, não um serviço pronto para produção.
+O escopo desta etapa concentra-se na implementação e demonstração técnica da proposta em ambiente acadêmico.
 
-Não cadastrar dados pessoais reais nos campos livres de comentários, títulos ou descrições. A identificação dos dados como fictícios não representa, por si só, comprovação integral de conformidade com a LGPD.
+Utilizar somente dados fictícios nos campos livres de comentários, títulos ou descrições. O uso de dados identificados como `[DEMO]` integra os cuidados de tratamento de dados descritos neste documento.
 
 ## Tecnologias
 
@@ -104,7 +104,7 @@ A solução é composta pelos seguintes fluxos:
 
 O Terraform gerencia a configuração da infraestrutura adotada por importação. O pipeline gerencia a versão da imagem implantada.
 
-O diagrama visual da arquitetura compõe o PDF de entrega.
+A descrição da arquitetura e dos fluxos compõe o PDF de entrega.
 
 ## Execução local da aplicação
 
@@ -133,17 +133,15 @@ As demais operações estão descritas em `/docs`.
 
 A porta local da aplicação pode ser ajustada pela variável `APP_PORT`. O Compose original publica essa porta nas interfaces disponíveis do host; para uso exclusivamente local, recomenda-se restringir a publicação ao endereço de loopback.
 
-### Persistência local
+### Armazenamento nos ambientes
 
-O serviço da aplicação utiliza o volume nomeado `dados`, montado em `/app/data`.
+O serviço local da aplicação utiliza o volume nomeado `dados`, montado em `/app/data`.
 
 O banco SQLite é inicializado no início da aplicação. Os dados iniciais de demonstração são inseridos quando a tabela de categorias está vazia.
 
 Não execute comandos de remoção de volumes sem avaliar a perda dos dados locais.
 
-A persistência fornecida pelo Compose local não deve ser presumida para o ambiente Azure. Não há, nos arquivos Terraform apresentados, configuração explícita de volume persistente para o SQLite.
-
-Os registros criados na demonstração pública devem ser tratados como descartáveis. Não há garantia documentada de preservação entre substituições de réplicas ou revisões.
+Na implantação Azure apresentada, o banco permanece no ambiente de execução do container, sem volume persistente explicitamente configurado nos arquivos Terraform. Os registros da demonstração pública são descartáveis e podem ser reinicializados após a substituição de réplicas ou revisões.
 
 ## Testes automatizados
 
@@ -169,9 +167,9 @@ Medidas presentes na configuração:
 - Bloqueio de novos privilégios no Compose.
 - Banco local armazenado em volume separado.
 
-Essas medidas são complementares. Não substituem correções de vulnerabilidades, controle de acesso, validação de configuração ou revisão de segurança.
+Essas medidas integram a estratégia de defesa em profundidade, em conjunto com as verificações automatizadas e a política de tratamento de vulnerabilidades.
 
-As restrições definidas no Docker Compose são configurações do ambiente local e não devem ser consideradas automaticamente aplicadas à Azure.
+As restrições de filesystem, capacidades Linux e novos privilégios descritas para o Docker Compose correspondem à configuração do ambiente local. A configuração do ambiente Azure é documentada separadamente nos arquivos Terraform.
 
 ## Pipeline DevSecOps
 
@@ -201,7 +199,7 @@ O fluxo implementado inclui:
 - A publicação e o deploy executam apenas na branch `main`, em eventos de `push` ou execução manual.
 - O job de deploy depende do job de validação.
 
-A etapa final exibe o endereço público, mas não executa uma verificação HTTP de saúde após o deploy. A disponibilidade da aplicação deve ser conferida separadamente.
+A etapa final exibe o endereço público. A verificação HTTP de saúde após o deploy é realizada separadamente do workflow.
 
 ### Evidências de bloqueio e aprovação
 
@@ -210,7 +208,7 @@ A etapa final exibe o endereço público, mas não executa uma verificação HTT
 
 Os links estão na seção de entrega. Os prints e os relatórios correspondentes compõem as evidências do PDF.
 
-A aprovação posterior não comprova eliminação de todos os achados. A política inclui aceitação temporária de risco para HIGH sem correção informada, conforme detalhado ao final deste documento.
+A execução aprovada atendeu à política de vulnerabilidades documentada, que contempla aceitação temporária de achados HIGH sem correção informada.
 
 ### Credenciais
 
@@ -248,9 +246,7 @@ A configuração foi validada com `terraform validate`. Após separar a responsa
 
 `No changes. Your infrastructure matches the configuration.`
 
-Esse resultado demonstra ausência de diferenças propostas nos atributos gerenciados naquela execução. Não comprova criação original dos recursos por Terraform.
-
-Não foi demonstrada a recriação integral do ambiente a partir do zero. Esse limite deve ser considerado em relação ao critério acadêmico de infraestrutura criada por código.
+A validação e o plano sem mudanças registram o alinhamento dos atributos gerenciados com a configuração declarada. A abordagem adotada neste projeto foi incorporar recursos existentes ao Terraform por importação.
 
 ### Separação de responsabilidades
 
@@ -322,7 +318,7 @@ A inicialização conjunta também sobe a aplicação local, mas o destino de co
 4. Importe `quem-faz-observabilidade.json` pela área de dashboards.
 5. Se solicitado, selecione a fonte de dados Prometheus configurada.
 
-O JSON exportado preserva a definição do dashboard, não o histórico das métricas nem toda a configuração do Grafana.
+O JSON exportado preserva a definição do dashboard. O histórico das métricas e as demais configurações do Grafana são armazenados separadamente.
 
 ### Painéis validados
 
@@ -332,15 +328,15 @@ O JSON exportado preserva a definição do dashboard, não o histórico das mét
 - Latência p95: estimativa do percentil 95 do tempo de resposta.
 - Saturação de descritores: percentual do limite de descritores de arquivo utilizado pelo processo.
 
-O painel de coleta é um indicador adicional, não substitui uma das quatro métricas de ouro.
+O dashboard apresenta as quatro métricas de ouro e um indicador adicional de sucesso da coleta.
 
 A medida de saturação utiliza a expressão:
 
 `100 * process_open_fds{job="quem-faz"} / process_max_fds{job="quem-faz"}`
 
-Essa medida representa utilização de um recurso finito do processo. Não representa saturação de CPU, memória ou capacidade global do serviço.
+O indicador de saturação adotado mede o percentual de utilização do limite de descritores de arquivo do processo.
 
-A validação utilizou requisições de demonstração contra a aplicação pública. Não constitui teste de carga, ensaio de capacidade ou comprovação de desempenho sob concorrência elevada.
+A validação funcional do monitoramento utilizou requisições de demonstração contra a aplicação pública.
 
 Ausência de tráfego pode produzir taxa zero e deixar painéis baseados em divisão ou percentis sem valor.
 
@@ -356,16 +352,16 @@ Configuração utilizada na demonstração:
 - Condição: resultado acima de `0.2` requisição por segundo.
 - Período pendente configurado para o teste: 30 segundos.
 - Geração de tráfego por consultas de leitura à API pública.
-- Estado `Firing` confirmado durante a demonstração.
-- Captura do disparo preservada para o PDF.
+- Avaliação da condição em `Firing` registrada na captura, com cabeçalho da regra em `Pending` no momento apresentado.
+- Captura da avaliação preservada para o PDF.
 
 O limite foi reduzido exclusivamente para demonstrar o funcionamento do alerta. Não representa capacidade máxima, degradação do serviço ou incidente real.
 
-O estado `Firing` comprova a avaliação da regra no Grafana. Não comprova entrega de e-mail ou outra notificação externa.
+A demonstração abrange a avaliação da condição de alerta no Grafana; a entrega de notificações externas permanece como evolução operacional.
 
 A regra foi exportada para `alerta grafana.json`. O arquivo deve ser revisado antes de sua publicação e importado ou provisionado separadamente do dashboard, conforme as opções compatíveis da versão do Grafana.
 
-### Limitações e decisões de segurança
+### Configuração e cuidados operacionais
 
 - Prometheus e Grafana executam com UID `10001`.
 - O sistema de arquivos principal permanece somente leitura.
@@ -374,7 +370,7 @@ A regra foi exportada para `alerta grafana.json`. O arquivo deve ser revisado an
 - Exporte o dashboard e a regra de alerta antes de interromper o ambiente.
 - A pasta de plugins do Grafana possui uma montagem específica com execução permitida, necessária para os plugins de backend baixados.
 - A verificação de assinaturas dos plugins não foi desativada.
-- As imagens de monitoramento utilizam a tag móvel `latest`; o ambiente não é completamente reproduzível enquanto essas referências não forem fixadas em versões ou digests validados.
+- As imagens de monitoramento utilizam a tag móvel `latest`; a reprodução de versões específicas depende da fixação de tags ou digests validados.
 - A coleta depende do computador local, dos containers de monitoramento, da conexão com a internet e da disponibilidade do MVP.
 - O intervalo de cinco segundos aumenta o número de requisições à aplicação pública e pode mantê-la ativa, afetando o consumo.
 - O endpoint de métricas está publicamente acessível no ambiente demonstrado; seu conteúdo não deve conter dados pessoais, credenciais ou valores fornecidos livremente por usuários como labels.
@@ -389,7 +385,7 @@ Os dados de negócio ficam no SQLite acessado pela aplicação.
 - Na Azure: arquivo no ambiente de execução da aplicação, sem volume persistente explicitamente configurado nos arquivos Terraform apresentados.
 - Região dos recursos Azure declarados: East US, nos Estados Unidos.
 
-A região de implantação não constitui garantia de localização exclusiva de todos os dados operacionais, backups ou metadados dos serviços utilizados.
+A região declarada identifica a implantação dos recursos Azure. A localização de dados operacionais, backups e metadados também depende das condições dos serviços utilizados.
 
 ### Campos livres e exposição pública
 
@@ -399,13 +395,13 @@ As operações demonstradas não implementam autenticação de usuários na apli
 
 Não inserir nomes reais, telefones, endereços, documentos, e-mails ou outras informações pessoais.
 
-Antes de qualquer uso real, seriam necessários controles adicionais de autenticação, autorização, prevenção de abuso, retenção, exclusão e atendimento aos direitos dos titulares.
+Para uma evolução destinada a usuários reais, deverão ser definidos controles de autenticação, autorização, prevenção de abuso, retenção, exclusão e atendimento aos direitos dos titulares.
 
 ### Logs e métricas
 
 Logs operacionais e registros de acesso podem conter metadados, como horários, caminhos e endereços IP, dependendo da configuração dos serviços.
 
-O ambiente Container Apps está associado ao Log Analytics Workspace, cuja retenção declarada no Terraform é de 30 dias. Isso não comprova, isoladamente, quais categorias de logs estão efetivamente sendo enviadas.
+O ambiente Container Apps está associado ao Log Analytics Workspace, cuja retenção declarada no Terraform é de 30 dias. As categorias efetivamente enviadas dependem da configuração de coleta dos serviços.
 
 As métricas coletadas ficam no armazenamento temporário do Prometheus local. Não devem incorporar conteúdo pessoal dos campos livres.
 
@@ -419,7 +415,7 @@ Antes de inserir capturas no PDF:
 - Manter somente o conteúdo suficiente para demonstrar o requisito.
 - Entregar as evidências pelo portal da disciplina.
 
-O uso de dados fictícios, a localização documentada e os cuidados com as capturas são medidas de redução de risco. Não equivalem a uma declaração de conformidade integral com a LGPD.
+O uso de dados fictícios, a localização documentada e os cuidados com as capturas integram as medidas de redução de risco do MVP. Uma evolução para tratamento de dados pessoais reais exige avaliação específica dos requisitos aplicáveis da LGPD.
 
 ## Responsabilidade compartilhada
 
@@ -432,7 +428,7 @@ O uso de dados fictícios, a localização documentada e os cuidados com as capt
 | GitHub e Docker Hub | Operação dos respectivos serviços hospedados, conforme seus termos |
 | Equipe do projeto | Segurança das contas, permissões do workflow, credenciais de publicação e conteúdo dos repositórios e imagens |
 
-A utilização de serviços gerenciados não transfere ao provedor a responsabilidade pelo conteúdo da aplicação, pelos dados coletados ou pelas decisões de configuração da equipe.
+O modelo de responsabilidade compartilhada mantém sob gestão da equipe o conteúdo da aplicação, os dados inseridos e as decisões de configuração, enquanto os provedores operam as camadas abrangidas pelos respectivos serviços.
 
 ## Custos e controle de consumo
 
@@ -449,7 +445,7 @@ A estimativa da solução deve considerar:
 
 A configuração declara 0,25 vCPU e 0,5 GiB por réplica, mínimo de zero e máximo de uma réplica por revisão.
 
-O modo de revisões é `Multiple`. O limite por revisão não deve ser interpretado automaticamente como limite global de toda a aplicação quando houver várias revisões ativas.
+O modo de revisões é `Multiple`. O dimensionamento total depende da quantidade de revisões ativas e das réplicas em execução em cada uma.
 
 Prometheus e Grafana executam no computador local, sem recursos Azure dedicados a esses serviços na arquitetura apresentada.
 
@@ -463,15 +459,13 @@ Estimativa de referência elaborada em 18/11/2026, em dólares americanos
 - Período simulado: 30 dias, equivalentes a 720 horas.
 - Uma única réplica em execução no total, com 0,25 vCPU e 0,5 GiB de memória.
 - Cenário conservador: réplica cobrada na tarifa ativa durante todo o período.
-- A configuração permite escala a zero; disponibilidade da URL não significa
-  necessariamente processamento e cobrança contínuos.
-- Os valores são uma simulação, não uma medição do consumo nem uma previsão
-  da fatura da assinatura.
+- A configuração permite escala a zero; disponibilidade da URL não significa necessariamente processamento e cobrança contínuos.
+- Os valores são uma simulação, não uma medição do consumo nem uma previsão da fatura da assinatura.
 
 #### Tarifas de referência
 
 | Componente | Tarifa utilizada |
-|---|---:|
+|---|---|
 | CPU ativa | US$ 0,000024 por vCPU-segundo |
 | Memória | US$ 0,000003 por GiB-segundo |
 | Requisições excedentes à franquia | US$ 0,40 por milhão |
@@ -484,7 +478,7 @@ da Microsoft.
 #### Resultado da simulação de computação
 
 | Item | Consumo em 30 dias | Custo sem franquias |
-|---|---:|---:|
+|---|---|---|
 | CPU | 648.000 vCPU-segundos | US$ 15,55 |
 | Memória | 1.296.000 GiB-segundos | US$ 3,89 |
 | Total de computação | — | **US$ 19,44** |
@@ -500,21 +494,16 @@ A franquia é compartilhada pela assinatura. O período de avaliação pode
 atravessar meses, portanto esse desconto simplificado não reproduz
 exatamente o faturamento por mês-calendário.
 
-#### Limites da estimativa
+#### Abrangência da estimativa
 
 - Os totais acima incluem somente CPU e memória.
 - Requisições dependem do volume efetivo e da franquia disponível.
-- Ingestão e eventual retenção faturável de logs no Log Analytics,
-  transferência de dados, impostos e outros recursos não estão
-  quantificados nem incluídos nesses totais.
-- Não foi consultada a fatura da assinatura; não se declara custo real
-  nem custo total igual a zero.
-- Prometheus e Grafana executam localmente, sem recursos Azure dedicados
-  a esses serviços; custos do computador e da conexão não foram estimados.
-- O modo Multiple permite várias revisões ativas. A simulação considera
-  apenas uma réplica no total; mais réplicas podem elevar o custo.
+- Ingestão e eventual retenção faturável de logs no Log Analytics, transferência de dados, impostos e outros recursos não estão quantificados nem incluídos nesses totais.
+- A simulação utiliza tarifas de referência; o custo real depende do consumo registrado e das condições da assinatura.
+- Prometheus e Grafana executam localmente, sem recursos Azure dedicados a esses serviços; custos do computador e da conexão não foram estimados.
+- O modo `Multiple` permite várias revisões ativas. A simulação considera apenas uma réplica no total; mais réplicas podem elevar o custo.
 - A coleta a cada cinco segundos pode manter a aplicação ativa.
-- Pausar o aplicativo não garante ausência de custos dos demais recursos.
+- A interrupção do aplicativo reduz seu consumo de execução; eventuais custos de outros recursos devem ser acompanhados separadamente.
 
 Assim, a referência para 30 dias de computação continuamente ativa é
 **US$ 19,44 antes das franquias**, ou **US$ 14,04 no exemplo com uma
@@ -523,8 +512,8 @@ Com escala a zero e uso ocasional, o consumo de computação pode ser menor.
 
 #### Fontes
 
-- [Microsoft Azure — regras de cobrança e franquias do Container Apps](https://azure.microsoft.com/pt-br/pricing/details/container-apps/)
-- [DevZero — tarifas de referência para East US](https://www.devzero.io/blog/azure-container-apps-pricing)
+- [Microsoft Azure — regras de cobrança e franquias do Container Apps](https://azure.microsoft.com/pt-br/pricing/details/container-apps/) — consultado em 18/11/2026.
+- [DevZero — tarifas de referência para East US](https://www.devzero.io/blog/azure-container-apps-pricing) — consultado em 18/11/2026.
 
 ## Evidências e entrega
 
@@ -533,13 +522,13 @@ A entrega reúne o repositório público, o endereço da aplicação e um PDF ú
 Conteúdo previsto para o PDF:
 
 - Arquitetura da solução.
-- Funcionalidades do MVP com dados fictícios [DEMO].
+- Funcionalidades do MVP com dados fictícios `[DEMO]`.
 - Segurança do container.
 - Pipeline com bloqueio e execução aprovada.
 - Infraestrutura gerenciada pelo Terraform por importação.
-- Dashboard de observabilidade e alerta em estado Firing.
+- Dashboard de observabilidade e avaliação da condição de alerta em `Firing`.
 - Estimativa de custos, premissas e fontes.
-- Limitações, cuidados com dados e links da entrega.
+- Escopo acadêmico, cuidados com dados e links da entrega.
 
 As capturas são mantidas localmente e não precisam ser publicadas no GitHub.
 
@@ -547,13 +536,13 @@ As capturas são mantidas localmente e não precisam ser publicadas no GitHub.
 
 O dashboard e a regra de alerta exportados referenciam a fonte Prometheus com UID `eg4en712jz8cge`. Em outro ambiente, é necessário configurar esse UID ou ajustar as referências dos arquivos para a fonte criada.
 
-A regra referencia também o receiver `empty`. A configuração desse receiver não está incluída na exportação apresentada. O disparo demonstrado não comprova entrega de notificações.
+A regra referencia também o receiver `empty`. Para habilitar notificações externas em outro ambiente, é necessário configurar o destino e associá-lo à política de notificações; essa configuração não está incluída na exportação apresentada.
 
 ### Disponibilidade e validade da exceção
 
-A disponibilidade da aplicação deve ser planejada para a entrega e a correção.
+A disponibilidade da aplicação deve contemplar o período de entrega e correção acadêmica.
 
-A exceção de risco abaixo expira em 19/11/2026 às 23:55, horário de Brasília. A operação posterior exige nova avaliação dos achados e decisão documentada, sem renovação automática.
+A exceção de risco abaixo possui prazo próprio, independente da consulta às evidências ou do acionamento do pipeline. Sua validade original é até 19/11/2026 às 23h55, horário de Brasília. A continuidade da operação após essa data requer revisão dos achados e decisão documentada do responsável, sem renovação automática.
 
 ### Política de vulnerabilidades da imagem
 
@@ -561,6 +550,7 @@ O pipeline utiliza Trivy para analisar vulnerabilidades dos pacotes
 do sistema operacional e das dependências da imagem.
 
 Critérios de bloqueio:
+
 - Qualquer vulnerabilidade CRITICAL, com ou sem correção informada.
 - Vulnerabilidades HIGH com versão corrigida informada pelo Trivy.
 
@@ -572,37 +562,31 @@ Elas permanecem visíveis no relatório de evidências.
 
 - Responsável: mantenedor do projeto Quem Faz.
 - Escopo: achados HIGH sem versão corrigida informada pelo Trivy.
-- Referência inicial: imagem quem-faz:979615869dc086f6ead2e227148511c66dd7fbe3.
+- Referência inicial: imagem `quem-faz:979615869dc086f6ead2e227148511c66dd7fbe3`.
 - Situação no relatório analisado: 47 ocorrências HIGH e nenhuma CRITICAL.
 - Origem dos achados apresentados: pacotes do Debian da imagem.
-- Justificativa: o relatório não informa versões corrigidas para
-  esses achados; a atualização dos pacotes não eliminou as ocorrências.
+- Justificativa: o relatório não informa versões corrigidas para esses achados; a atualização dos pacotes não eliminou as ocorrências.
 - Decisão: aceitação temporária de risco para a demonstração acadêmica.
-- Validade: até 19/11/2026 às 23:55, horário de Brasília, sem
-  renovação automática da aceitação de risco.
+- Validade: até 19/11/2026 às 23h55, horário de Brasília, sem renovação automática da aceitação de risco.
 - Revisão: a cada execução do pipeline e antes da entrega.
-- Tratamento: aplicar atualizações quando disponíveis ou avaliar
-  substituição da imagem-base, seguida de testes e nova análise.
-- Restrição: utilizar somente dados fictícios identificados como [DEMO],
-  sem coleta de dados pessoais reais.
+- Tratamento: aplicar atualizações quando disponíveis ou avaliar substituição da imagem-base, seguida de testes e nova análise.
+- Restrição: utilizar somente dados fictícios identificados como `[DEMO]`, sem coleta de dados pessoais reais.
 
 Referências dos achados no relatório inicial:
-- util-linux e pacotes relacionados: CVE-2026-76642,
-  CVE-2026-78408, CVE-2026-78409 e CVE-2026-78410.
+
+- util-linux e pacotes relacionados: CVE-2026-76642, CVE-2026-78408, CVE-2026-78409 e CVE-2026-78410.
 - acl: CVE-2026-54369.
 - ncurses: CVE-2025-69720.
 - sqlite: CVE-2026-119373, CVE-2026-119374 e CVE-2026-119379.
 - systemd e pacotes relacionados: CVE-2026-16742.
 - perl: CVE-2026-9538.
 
-A execução como usuário sem privilégios (UID 10001) é uma medida
-de defesa em profundidade, não uma correção dessas vulnerabilidades.
-Não foi comprovada a ausência de explorabilidade dos achados.
+A execução como usuário sem privilégios, UID `10001`, integra a defesa em profundidade. O tratamento dos achados permanece vinculado à política de vulnerabilidades, sem pressupor sua correção ou ausência de explorabilidade.
 
-Os relatórios ficam no artefato relatorios-devsecops:
-- trivy.txt: todos os achados HIGH e CRITICAL.
-- trivy-critical.txt: resultado do controle de CRITICAL.
-- trivy-high-fixed.txt: resultado do controle de HIGH com correção.
+Os relatórios ficam no artefato `relatorios-devsecops`:
 
-Pipeline aprovado significa conformidade com esta política,
-não ausência de vulnerabilidades.
+- `trivy.txt`: todos os achados HIGH e CRITICAL.
+- `trivy-critical.txt`: resultado do controle de CRITICAL.
+- `trivy-high-fixed.txt`: resultado do controle de HIGH com correção.
+
+A aprovação do pipeline representa o atendimento aos critérios definidos nesta política.
