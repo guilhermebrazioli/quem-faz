@@ -453,42 +453,78 @@ O modo de revisões é `Multiple`. O limite por revisão não deve ser interpret
 
 Prometheus e Grafana executam no computador local, sem recursos Azure dedicados a esses serviços na arquitetura apresentada.
 
-### Situação da estimativa
+### Estimativa de custos — cenário acadêmico
 
-A estimativa monetária ainda precisa ser validada antes da entrega final.
+Estimativa de referência elaborada em 18/11/2026, em dólares americanos
+(USD), para Azure Container Apps no plano Consumption, região East US.
 
-Para concluí-la, registrar:
+#### Premissas
 
-1. Região e moeda da estimativa.
-2. Período de referência.
-3. Quantidade de réplicas e horas de atividade previstas.
-4. Consumo estimado de logs.
-5. Preços e franquias aplicáveis na data da consulta.
-6. Fonte utilizada e data da consulta.
-7. Distinção entre custo estimado e custo efetivamente registrado.
+- Período simulado: 30 dias, equivalentes a 720 horas.
+- Uma única réplica em execução no total, com 0,25 vCPU e 0,5 GiB de memória.
+- Cenário conservador: réplica cobrada na tarifa ativa durante todo o período.
+- A configuração permite escala a zero; disponibilidade da URL não significa
+  necessariamente processamento e cobrança contínuos.
+- Os valores são uma simulação, não uma medição do consumo nem uma previsão
+  da fatura da assinatura.
 
-Não se assume custo zero por haver escala mínima igual a zero ou eventual franquia gratuita.
+#### Tarifas de referência
 
-O monitoramento a cada cinco segundos pode manter a aplicação ativa. Pausar o aplicativo não garante custo zero dos demais recursos.
+| Componente | Tarifa utilizada |
+|---|---:|
+| CPU ativa | US$ 0,000024 por vCPU-segundo |
+| Memória | US$ 0,000003 por GiB-segundo |
+| Requisições excedentes à franquia | US$ 0,40 por milhão |
 
-## Encerramento e controle de recursos
+As tarifas unitárias foram consultadas no levantamento da DevZero para
+East US, atualizado em 17/11/2026. Essa é uma fonte secundária que informa
+utilizar a Azure Retail Prices API; não constitui cotação personalizada
+da Microsoft.
 
-Para parar a aplicação local sem o monitoramento, execute `docker compose stop`.
+#### Resultado da simulação de computação
 
-Para parar a aplicação e os serviços de monitoramento, execute `docker compose -f docker-compose.yml -f docker-compose.monitoramento.yml stop`.
+| Item | Consumo em 30 dias | Custo sem franquias |
+|---|---:|---:|
+| CPU | 648.000 vCPU-segundos | US$ 15,55 |
+| Memória | 1.296.000 GiB-segundos | US$ 3,89 |
+| Total de computação | — | **US$ 19,44** |
 
-Se o Compose solicitar `GRAFANA_ADMIN_PASSWORD`, disponibilize a variável na sessão antes de executar o comando.
+A Microsoft informa franquias mensais por assinatura de 180.000
+vCPU-segundos, 360.000 GiB-segundos e 2 milhões de requisições.
 
-Antes de parar o Grafana, confirme que o dashboard atualizado e a regra de alerta foram exportados.
+Descontando uma franquia mensal integral de CPU e memória, totalmente
+disponível para este projeto, o total ilustrativo de computação seria
+**US$ 14,04**.
 
-Na Azure:
+A franquia é compartilhada pela assinatura. O período de avaliação pode
+atravessar meses, portanto esse desconto simplificado não reproduz
+exatamente o faturamento por mês-calendário.
 
-- Pause o Container App quando ele não estiver sendo utilizado, considerando a disponibilidade necessária à avaliação.
-- Planeje a disponibilidade do endereço público durante a correção.
-- Acompanhe os custos dos demais recursos.
-- Após a avaliação, remova os recursos que não forem mais necessários, preservando antes as evidências.
-- Se usar Terraform para exclusão, revise cuidadosamente o plano e os recursos que serão removidos.
-- Não exclua recursos enquanto a aplicação ainda precisar estar disponível para avaliação.
+#### Limites da estimativa
+
+- Os totais acima incluem somente CPU e memória.
+- Requisições dependem do volume efetivo e da franquia disponível.
+- Ingestão e eventual retenção faturável de logs no Log Analytics,
+  transferência de dados, impostos e outros recursos não estão
+  quantificados nem incluídos nesses totais.
+- Não foi consultada a fatura da assinatura; não se declara custo real
+  nem custo total igual a zero.
+- Prometheus e Grafana executam localmente, sem recursos Azure dedicados
+  a esses serviços; custos do computador e da conexão não foram estimados.
+- O modo Multiple permite várias revisões ativas. A simulação considera
+  apenas uma réplica no total; mais réplicas podem elevar o custo.
+- A coleta a cada cinco segundos pode manter a aplicação ativa.
+- Pausar o aplicativo não garante ausência de custos dos demais recursos.
+
+Assim, a referência para 30 dias de computação continuamente ativa é
+**US$ 19,44 antes das franquias**, ou **US$ 14,04 no exemplo com uma
+franquia integral disponível**, acrescida dos componentes não incluídos.
+Com escala a zero e uso ocasional, o consumo de computação pode ser menor.
+
+#### Fontes
+
+- [Microsoft Azure — regras de cobrança e franquias do Container Apps](https://azure.microsoft.com/pt-br/pricing/details/container-apps/)
+- [DevZero — tarifas de referência para East US](https://www.devzero.io/blog/azure-container-apps-pricing)
 
 ## Evidências e entrega
 
