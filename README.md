@@ -13,29 +13,69 @@ Desenvolvido no contexto das disciplinas CitizenTech e Secure DevOps da FIAP.
 - Evidências: PDF único entregue no portal da disciplina; as capturas não precisam ser publicadas no repositório.
 - Dashboard exportado: `quem-faz-observabilidade.json`.
 
-## Ficha técnica do MVP
+## Ficha técnica do MVP — Quem Faz
 
-| Item | Descrição |
-|---|---|
-| Nome | Quem Faz |
-| Contexto | Projeto acadêmico CitizenTech e Secure DevOps — FIAP |
-| Objetivo | Consulta de profissionais por categoria e publicação de solicitações de serviços |
-| Backend | Python, FastAPI e Uvicorn |
-| Banco de dados | SQLite |
-| Interface | Página HTML e documentação interativa da API |
-| Empacotamento | Docker, com construção em múltiplos estágios |
-| Execução local | Docker Compose |
-| Hospedagem | Azure Container Apps, região East US |
-| Recursos do container na configuração Terraform | 0,25 vCPU e 0,5 GiB de memória |
-| Escala na configuração Terraform | Mínimo de zero e máximo de uma réplica por revisão |
-| Registro de imagens | Docker Hub |
-| Integração e entrega | GitHub Actions |
-| Segurança do pipeline | Gitleaks, Semgrep e Trivy |
-| Testes | Pytest |
-| Infraestrutura como código | Terraform; recursos existentes incorporados por importação |
-| Observabilidade | Prometheus e Grafana locais coletando o MVP público via HTTPS |
-| Dados | Exclusivamente fictícios para demonstração |
-| Ambiente de uso | Demonstração acadêmica com dados fictícios |
+### 1. Nome do produto
+
+**Quem Faz** — Plataforma de conexão entre contratantes e prestadores de serviços.
+
+### 2. Cidadão e território
+
+Moradores, empresas e profissionais prestadores de serviços da cidade de **São Paulo (SP)**.
+
+### 3. Problema, em uma frase
+
+A dificuldade de encontrar profissionais adequados e confiáveis para a contratação de serviços, enquanto prestadores enfrentam obstáculos para divulgar suas habilidades e conquistar novos clientes.
+
+### 4. Proposta de valor
+
+O Quem Faz propõe uma plataforma que aproxima contratantes e prestadores de serviços por meio da exploração de categorias profissionais e da publicação de solicitações. Os usuários poderão consultar perfis, solicitar propostas e avaliar experiências após a conclusão dos serviços.
+
+No módulo de Secure DevOps, a proposta é publicar o MVP de forma segura e reproduzível: cada alteração passa por testes e verificações de segurança antes de chegar à nuvem, e a aplicação publicada é monitorada continuamente.
+
+### 5. Arquitetura: componentes
+
+- **Aplicação:** Python, FastAPI e Uvicorn, com SQLite para os dados de demonstração.
+- **Container:** Docker com construção em múltiplos estágios e execução com usuário não root.
+- **Nuvem:** Azure Container Apps (East US), com 0,25 vCPU, 0,5 GiB e de 0 a 1 réplica.
+- **Entrega:** GitHub Actions com pytest, Gitleaks, Semgrep e Trivy; imagem aprovada publicada no Docker Hub e implantada com autenticação OIDC.
+- **Infraestrutura como código:** Terraform, com os recursos existentes incorporados por importação.
+- **Observabilidade:** Prometheus e Grafana locais coletando as métricas do MVP público via HTTPS.
+
+**Fluxo de entrega:** GitHub → GitHub Actions (testes e segurança) → Docker Hub → Azure Container Apps → Prometheus e Grafana.
+
+### 6. Fontes de dados
+
+Dados exclusivamente fictícios, identificados como [DEMO]: profissionais, categorias e avaliações carregados na inicialização da aplicação. Nenhum dado pessoal real é armazenado.
+
+### 7. Modelos de IA utilizados
+
+Não se aplica a este módulo. A inteligência artificial do Quem Faz está nos módulos de Generative AI (assistente de contratação segura) e Maker Lab (Smart Point).
+
+### 8. URL do MVP e repositório
+
+- **MVP público:** https://quem-faz.whiteocean-1daba118.eastus.azurecontainerapps.io/
+- **Repositório:** https://github.com/guilhermebrazioli/quem-faz
+
+### 9. Indicadores de impacto
+
+O pipeline impede a publicação de imagens com vulnerabilidades críticas, e os quatro sinais de ouro (tráfego, erros, latência e saturação) são monitorados, com regra de alerta no Grafana. O custo estimado é de até cerca de US$ 14 por mês com uma réplica ativa em tempo integral. **Esses indicadores são técnicos**: o impacto social da plataforma ainda não foi medido com usuários reais.
+
+### 10. ODS conectados
+
+**ODS 9 — Indústria, Inovação e Infraestrutura**
+
+O Quem Faz contribui para esse objetivo ao propor uma solução tecnológica que digitaliza processos e facilita a conexão entre profissionais e contratantes. No módulo de Secure DevOps, a infraestrutura em nuvem, a entrega automatizada e o monitoramento contínuo sustentam essa solução de forma segura e escalável.
+
+**ODS 10 — Redução das Desigualdades (Meta 10.2)**
+
+O Quem Faz busca ampliar as oportunidades de trabalho e geração de renda para profissionais autônomos e informais, inclusive aqueles que atuam em bairros periféricos de São Paulo. A plataforma oferece um espaço para que esses profissionais divulguem suas habilidades, encontrem novos clientes e construam sua reputação por meio de avaliações vinculadas aos serviços realizados.
+
+**ODS 11 — Cidades e Comunidades Sustentáveis**
+
+O Quem Faz se conecta a esse objetivo ao propor melhorias no acesso a serviços locais na cidade de São Paulo, facilitando o encontro entre moradores, empresas e profissionais da própria comunidade.
+
+As contribuições aos ODS representam os objetivos e benefícios potenciais da solução, ainda não resultados sociais comprovados em operação real.
 
 ## Escopo e dados de demonstração
 
